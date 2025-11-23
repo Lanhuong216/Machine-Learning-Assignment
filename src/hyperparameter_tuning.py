@@ -10,39 +10,157 @@ import xgboost as xgb
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
-import pickle
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import functions từ ml_data_preparation
+# Import functions
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ml_data_preparation import create_evaluation_metrics
-from config import DATA_PROCESSED_DIR
+from config import DATA_PROCESSED_DIR, OUTPUT_VISUALIZATIONS_DIR, OUTPUT_REPORTS_DIR
+
+def create_evaluation_metrics():
+    """
+    Tạo dictionary chứa các hàm đánh giá metrics
+    """
+    from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+    import numpy as np
+    
+    def wmae(y_true, y_pred, weights):
+        """Weighted Mean Absolute Error"""
+        return np.average(np.abs(y_true - y_pred), weights=weights)
+    
+    def mape(y_true, y_pred):
+        """Mean Absolute Percentage Error"""
+        return np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
+    
+    return {
+        'mae': mean_absolute_error,
+        'rmse': lambda y_true, y_pred: np.sqrt(mean_squared_error(y_true, y_pred)),
+        'r2': r2_score,
+        'wmae': wmae,
+        'mape': mape
+    }
 
 def load_prepared_data():
-    """Load dữ liệu đã được chuẩn bị từ BƯỚC 1"""
+    """
+    Load dữ liệu đã được chuẩn bị từ preprocessing
+    Sử dụng features từ feature_chosen.csv
+    """
     print("=== LOAD DỮ LIỆU ĐÃ CHUẨN BỊ ===")
     
     try:
-        X_train = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, 'X_train.csv'))
-        X_test = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, 'X_test.csv'))
-        y_train = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, 'y_train.csv')).iloc[:, 0]
-        y_test = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, 'y_test.csv')).iloc[:, 0]
-        weights = np.load(os.path.join(DATA_PROCESSED_DIR, 'weights.npy'))
+        # Load train_detail và test_detail từ preprocessing
+        train_detail_path = os.path.join(DATA_PROCESSED_DIR, 'train_detail.csv')
+        test_detail_path = os.path.join(DATA_PROCESSED_DIR, 'test_detail.csv')
+        feature_chosen_path = os.path.join(DATA_PROCESSED_DIR, 'feature_chosen.csv')
         
-        print(f"✓ Đã load dữ liệu:")
-        print(f"  - X_train: {X_train.shape}")
-        print(f"  - X_test: {X_test.shape}")
-        print(f"  - y_train: {y_train.shape}")
-        print(f"  - y_test: {y_test.shape}")
+        if not os.path.exists(train_detail_path):
+            print(f"❌ Không tìm thấy file: {train_detail_path}")
+            print("Vui lòng chạy preprocessing.py trước")
+            return None, None, None, None, None
         
-        return X_train, X_test, y_train, y_test, weights
+        # Load train_detail và test_detail
+        train_detail = pd.read_csv(train_detail_path)
+        test_detail = pd.read_csv(test_detail_path) if os.path.exists(test_detail_path) else None
+        
+        # Convert Date to datetime
+        if 'Date' in train_detail.columns:
+            train_detail['Date'] = pd.to_datetime(train_detail['Date'])
+        if test_detail is not None and 'Date' in test_detail.columns:
+            test_detail['Date'] = pd.to_datetime(test_detail['Date'])
+        
+        # Load feature_chosen.csv
+        if os.path.exists(feature_chosen_path):
+            feature_chosen_df = pd.read_csv(feature_chosen_path)
+            feature_names = feature_chosen_df['Feature'].tolist()
+            print(f"✓ Đã load {len(feature_names)} features từ feature_chosen.csv")
+            print(f"  Features: {feature_names}")
+        else:
+            # Nếu không có feature_chosen.csv, lấy tất cả features trừ Date và Weekly_Sales
+            feature_names = [col for col in train_detail.columns 
+                           if col not in ['Date', 'Weekly_Sales']]
+            print(f"⚠️ Không tìm thấy feature_chosen.csv, sử dụng tất cả {len(feature_names)} features")
+        
+        # Kiểm tra các features có trong train_detail không
+        available_features = [f for f in feature_names if f in train_detail.columns]
+        missing_features = [f for f in feature_names if f not in train_detail.columns]
+        
+        if missing_features:
+            print(f"⚠️ Cảnh báo: Thiếu {len(missing_features)} features: {missing_features}")
+        
+        if len(available_features) == 0:
+            print("❌ Không có features nào khả dụng")
+            return None, None, None, None, None
+        
+        print(f"✓ Sử dụng {len(available_features)} features để train")
+        
+        # Tạo X và y từ train_detail
+        X_train = train_detail[available_features].copy()
+        y_train = train_detail['Weekly_Sales'].copy()
+        
+        # Xử lý missing values
+        X_train = X_train.fillna(0)
+        
+        # Chia train/test theo time series split (80/20)
+        # Sắp xếp theo Date để đảm bảo time series order
+        if 'Date' in train_detail.columns:
+            sorted_indices = train_detail.sort_values('Date').index
+            X_train_sorted = X_train.loc[sorted_indices]
+            y_train_sorted = y_train.loc[sorted_indices]
+        else:
+            X_train_sorted = X_train
+            y_train_sorted = y_train
+        
+        # Chia 80/20 (giữ lại 20% cuối làm test set)
+        split_idx = int(len(X_train_sorted) * 0.8)
+        X_train_final = X_train_sorted.iloc[:split_idx]
+        X_test_final = X_train_sorted.iloc[split_idx:]
+        y_train_final = y_train_sorted.iloc[:split_idx]
+        y_test_final = y_train_sorted.iloc[split_idx:]
+        
+        # Tạo weights cho WMAE từ IsHoliday
+        weights = None
+        if 'IsHoliday' in train_detail.columns:
+            # Lấy IsHoliday cho test set (sau khi đã sort)
+            if 'Date' in train_detail.columns:
+                train_detail_sorted = train_detail.sort_values('Date')
+                test_holiday = train_detail_sorted.iloc[split_idx:]['IsHoliday']
+            else:
+                test_holiday = train_detail.iloc[split_idx:]['IsHoliday']
+            
+            if test_holiday is not None and len(test_holiday) == len(y_test_final):
+                # Convert IsHoliday sang numeric nếu cần
+                if test_holiday.dtype == bool:
+                    weights = np.where(test_holiday.values == True, 5, 1)
+                elif test_holiday.dtype == object:
+                    # String format (True/False)
+                    weights = np.where((test_holiday == True) | (test_holiday == 'True') | (test_holiday == 1), 5, 1)
+                else:
+                    # Numeric format
+                    weights = np.where(test_holiday.values == 1, 5, 1)
+                print(f"✓ Đã tạo weights từ IsHoliday: {len(weights)} samples")
+            else:
+                weights = np.ones(len(y_test_final))
+                print("⚠️ Không tìm thấy IsHoliday cho test set, sử dụng weights = 1")
+        else:
+            weights = np.ones(len(y_test_final))
+            print("⚠️ Không có cột IsHoliday, sử dụng weights = 1")
+        
+        print(f"\n✓ Đã load và chuẩn bị dữ liệu:")
+        print(f"  - X_train: {X_train_final.shape}")
+        print(f"  - X_test: {X_test_final.shape}")
+        print(f"  - y_train: {y_train_final.shape}")
+        print(f"  - y_test: {y_test_final.shape}")
+        print(f"  - Features: {len(available_features)}")
+        
+        return X_train_final, X_test_final, y_train_final, y_test_final, weights
     
-    except FileNotFoundError as e:
-        print(f"Không tìm thấy file: {e}")
-        print("Vui lòng chạy ml_data_preparation.py trước")
+    except Exception as e:
+        print(f"❌ Lỗi khi load dữ liệu: {e}")
+        import traceback
+        traceback.print_exc()
+        print("Vui lòng chạy preprocessing.py trước")
         return None, None, None, None, None
 
 def create_parameter_grids():
@@ -180,129 +298,9 @@ def tune_xgboost(X_train, y_train, param_grid, n_iter=30, cv=3):
     
     return search.best_estimator_, search.best_params_, tuning_results
 
-def evaluate_tuned_models(models, X_test, y_test, metrics=None, weights=None):
-    """
-    Đánh giá các mô hình đã được tuning
-    
-    Args:
-        models (dict): Dictionary chứa các mô hình đã tuning
-        X_test: Test features
-        y_test: Test target
-        metrics (dict): Dictionary chứa các hàm đánh giá
-        weights (array): Weights cho WMAE
-        
-    Returns:
-        dict: Kết quả đánh giá
-    """
-    print("\n=== ĐÁNH GIÁ CÁC MÔ HÌNH ĐÃ TUNING ===")
-    
-    if metrics is None:
-        metrics = create_evaluation_metrics()
-    
-    results = {}
-    
-    for model_name, model in models.items():
-        print(f"\nĐánh giá {model_name}...")
-        
-        # Dự đoán
-        y_pred = model.predict(X_test)
-        
-        # Tính metrics
-        model_results = {}
-        for metric_name, metric_func in metrics.items():
-            if metric_name == 'wmae' and weights is not None:
-                model_results[metric_name] = metric_func(y_test, y_pred, weights)
-            else:
-                model_results[metric_name] = metric_func(y_test, y_pred)
-        
-        results[model_name] = model_results
-        
-        print(f"MAE: {model_results['mae']:.2f}")
-        print(f"RMSE: {model_results['rmse']:.2f}")
-        print(f"R²: {model_results['r2']:.4f}")
-        print(f"WMAE: {model_results['wmae']:.2f}")
-    
-    return results
-
-def compare_with_baseline(tuned_results, baseline_path=None):
-    if baseline_path is None:
-        from config import OUTPUT_REPORTS_DIR
-        baseline_path = os.path.join(OUTPUT_REPORTS_DIR, 'baseline_models_comparison.csv')
-    """
-    So sánh kết quả tuned với baseline
-    
-    Args:
-        tuned_results (dict): Kết quả các mô hình đã tuning
-        baseline_path (str): Đường dẫn đến file baseline results
-        
-    Returns:
-        pd.DataFrame: Bảng so sánh
-    """
-    print("\n=== SO SÁNH VỚI BASELINE ===")
-    
-    # Load baseline results
-    try:
-        baseline_df = pd.read_csv(baseline_path)
-        print("✓ Đã load kết quả baseline")
-    except FileNotFoundError:
-        print("⚠️ Không tìm thấy file baseline, chỉ hiển thị kết quả tuned")
-        baseline_df = None
-    
-    # Tạo comparison data
-    comparison_data = []
-    
-    # Thêm tuned models
-    for model_name, results in tuned_results.items():
-        comparison_data.append({
-            'Model': f"{model_name} (Tuned)",
-            'MAE': results['mae'],
-            'RMSE': results['rmse'],
-            'R²': results['r2'],
-            'WMAE': results['wmae']
-        })
-    
-    # Thêm baseline models nếu có
-    if baseline_df is not None:
-        for _, row in baseline_df.iterrows():
-            comparison_data.append({
-                'Model': row['Model'] + ' (Baseline)',
-                'MAE': row['MAE'],
-                'RMSE': row['RMSE'],
-                'R²': row['R²'],
-                'WMAE': row['WMAE']
-            })
-    
-    comparison_df = pd.DataFrame(comparison_data)
-    comparison_df = comparison_df.round(4)
-    comparison_df = comparison_df.sort_values('WMAE')
-    
-    print("\n" + "="*80)
-    print(comparison_df.to_string(index=False))
-    print("="*80)
-    
-    # Tính improvement
-    if baseline_df is not None:
-        print("\n=== CẢI THIỆN SO VỚI BASELINE ===")
-        for model_name, results in tuned_results.items():
-            # Tìm baseline tương ứng
-            baseline_name = model_name.replace(' (Tuned)', '')
-            baseline_row = baseline_df[baseline_df['Model'] == baseline_name]
-            
-            if not baseline_row.empty:
-                baseline_wmae = baseline_row['WMAE'].iloc[0]
-                tuned_wmae = results['wmae']
-                improvement = ((baseline_wmae - tuned_wmae) / baseline_wmae) * 100
-                
-                print(f"{model_name}:")
-                print(f"  Baseline WMAE: {baseline_wmae:.2f}")
-                print(f"  Tuned WMAE: {tuned_wmae:.2f}")
-                print(f"  Improvement: {improvement:.2f}%")
-    
-    return comparison_df
-
 def visualize_tuning_results(tuning_results_dict):
     """
-    Trực quan hóa kết quả tuning
+    Trực quan hóa kết quả tuning (chỉ tuning time và best score)
     
     Args:
         tuning_results_dict (dict): Dictionary chứa kết quả tuning
@@ -313,7 +311,8 @@ def visualize_tuning_results(tuning_results_dict):
     
     # 1. Tuning time comparison
     axes[0].bar(tuning_results_dict.keys(), 
-               [results['tuning_time']/60 for results in tuning_results_dict.values()])
+           [results['tuning_time']/60 for results in tuning_results_dict.values()],
+           color=['steelblue', 'coral'])
     axes[0].set_title('Tuning Time Comparison', fontsize=14, fontweight='bold')
     axes[0].set_ylabel('Time (minutes)')
     axes[0].tick_params(axis='x', rotation=45)
@@ -321,38 +320,30 @@ def visualize_tuning_results(tuning_results_dict):
     
     # 2. Best score comparison
     axes[1].bar(tuning_results_dict.keys(), 
-               [-results['best_score'] for results in tuning_results_dict.values()])
-    axes[1].set_title('Best Score Comparison (MAE)', fontsize=14, fontweight='bold')
+           [-results['best_score'] for results in tuning_results_dict.values()],
+           color=['steelblue', 'coral'])
+    axes[1].set_title('Best Score from Tuning (MAE)', fontsize=14, fontweight='bold')
     axes[1].set_ylabel('MAE')
     axes[1].tick_params(axis='x', rotation=45)
     axes[1].grid(True, alpha=0.3, axis='y')
     
     plt.tight_layout()
-    from config import OUTPUT_VISUALIZATIONS_DIR
     output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'hyperparameter_tuning_results.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
     print(f"✓ Đã lưu biểu đồ: {output_path}")
-    plt.show()
 
 def save_tuned_models(models_dict, tuning_results_dict):
     """
-    Lưu các mô hình đã tuning
+    Lưu best parameters vào CSV (không lưu models)
     
     Args:
-        models_dict (dict): Dictionary chứa các mô hình
+        models_dict (dict): Dictionary chứa các mô hình (không sử dụng, chỉ để tương thích)
         tuning_results_dict (dict): Dictionary chứa kết quả tuning
     """
-    print("\n=== LƯU CÁC MÔ HÌNH ĐÃ TUNING ===")
+    print("\n=== LƯU BEST PARAMETERS ===")
     
-    from config import MODELS_DIR, OUTPUT_REPORTS_DIR
-    for model_name, model in models_dict.items():
-        filename = f"tuned_{model_name.lower().replace(' ', '_')}_model.pkl"
-        filepath = os.path.join(MODELS_DIR, filename)
-        
-        with open(filepath, 'wb') as f:
-            pickle.dump(model, f)
-        
-        print(f"✓ Đã lưu: {filepath}")
+    from config import OUTPUT_REPORTS_DIR
     
     # Lưu best parameters
     best_params_df = pd.DataFrame({
@@ -401,48 +392,23 @@ def main():
     models['XGBoost'] = xgb_model
     tuning_results['XGBoost'] = xgb_tuning
     
-    # Đánh giá các mô hình đã tuning
-    print("\n" + "="*80)
-    metrics = create_evaluation_metrics()
-    evaluation_results = evaluate_tuned_models(models, X_test, y_test, metrics, weights)
-    
-    # So sánh với baseline
-    print("\n" + "="*80)
-    comparison_df = compare_with_baseline(evaluation_results)
-    
-    # Trực quan hóa
+    # Trực quan hóa kết quả tuning
     visualize_tuning_results(tuning_results)
     
-    # Lưu mô hình
+    # Lưu best parameters (chỉ CSV)
     save_tuned_models(models, tuning_results)
-    
-    # Lưu kết quả
-    from config import OUTPUT_REPORTS_DIR
-    evaluation_df = pd.DataFrame(evaluation_results).T
-    evaluation_df.to_csv(os.path.join(OUTPUT_REPORTS_DIR, 'tuned_models_evaluation.csv'))
-    comparison_df.to_csv(os.path.join(OUTPUT_REPORTS_DIR, 'tuned_vs_baseline_comparison.csv'), index=False)
-    
-    print(f"\n✓ Đã lưu kết quả:")
-    print(f"  - tuned_models_evaluation.csv")
-    print(f"  - tuned_vs_baseline_comparison.csv")
     
     print("\n" + "="*80)
     print("✓ HOÀN THÀNH BƯỚC 3: HYPERPARAMETER TUNING")
     print("="*80)
     print("\nCác file đã được tạo:")
-    print("  - tuned_random_forest_model.pkl")
-    print("  - tuned_xgboost_model.pkl")
     print("  - tuned_models_best_params.csv")
-    print("  - tuned_models_evaluation.csv")
-    print("  - tuned_vs_baseline_comparison.csv")
     print("  - hyperparameter_tuning_results.png")
-    print("\nBây giờ có thể tiếp tục BƯỚC 4 (Model Evaluation & Analysis)")
+    print("\nBây giờ có thể chạy train_with_best_params.py để train models với best parameters")
     
     return {
         'models': models,
-        'tuning_results': tuning_results,
-        'evaluation_results': evaluation_results,
-        'comparison': comparison_df
+        'tuning_results': tuning_results
     }
 
 if __name__ == "__main__":

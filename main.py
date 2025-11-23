@@ -70,55 +70,28 @@ def run_preprocessing():
         return False
 
 
-def run_ml_data_preparation():
+def run_k_fold_validation():
     """
-    BƯỚC 2: ML DATA PREPARATION
-    Chuẩn bị dữ liệu cho machine learning
+    BƯỚC 2: K-FOLD VALIDATION (UNTUNED MODELS)
+    Chạy k-fold validation cho Random Forest và XGBoost chưa tuning
     """
     print("\n" + "="*80)
-    print("BƯỚC 2: ML DATA PREPARATION")
+    print("BƯỚC 2: K-FOLD VALIDATION (UNTUNED MODELS)")
     print("="*80)
     
     try:
-        from ml_data_preparation import main as ml_prep_main
-        result = ml_prep_main()
+        from k_fold_validation import main as kfold_main
+        result = kfold_main()
         
         if result is None:
-            print("❌ ML Data Preparation thất bại")
+            print("❌ K-Fold Validation thất bại")
             return False
         
-        print("✓ Hoàn thành ML Data Preparation")
+        print("✓ Hoàn thành K-Fold Validation")
         return True
     
     except Exception as e:
-        print(f"❌ Lỗi khi chạy ML Data Preparation: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
-def run_baseline_models():
-    """
-    BƯỚC 3: BASELINE MODELS
-    Train các mô hình cơ sở (Linear Regression, Random Forest, XGBoost)
-    """
-    print("\n" + "="*80)
-    print("BƯỚC 3: BASELINE MODELS")
-    print("="*80)
-    
-    try:
-        from baseline_models import main as baseline_main
-        result = baseline_main()
-        
-        if result is None:
-            print("❌ Baseline Models thất bại")
-            return False
-        
-        print("✓ Hoàn thành Baseline Models")
-        return True
-    
-    except Exception as e:
-        print(f"❌ Lỗi khi chạy Baseline Models: {e}")
+        print(f"❌ Lỗi khi chạy K-Fold Validation: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -126,11 +99,12 @@ def run_baseline_models():
 
 def run_hyperparameter_tuning():
     """
-    BƯỚC 4: HYPERPARAMETER TUNING
+    BƯỚC 3: HYPERPARAMETER TUNING
     Tuning hyperparameters cho Random Forest và XGBoost
+    Xuất ra tuned_models_best_params.csv
     """
     print("\n" + "="*80)
-    print("BƯỚC 4: HYPERPARAMETER TUNING")
+    print("BƯỚC 3: HYPERPARAMETER TUNING")
     print("="*80)
     
     try:
@@ -151,10 +125,38 @@ def run_hyperparameter_tuning():
         return False
 
 
+def run_train_with_best_params():
+    """
+    BƯỚC 4: TRAIN WITH BEST PARAMS
+    Train models với best parameters từ tuned_models_best_params.csv
+    Sử dụng k-fold validation và xuất submission
+    """
+    print("\n" + "="*80)
+    print("BƯỚC 4: TRAIN WITH BEST PARAMS")
+    print("="*80)
+    
+    try:
+        from train_with_best_params import main as train_main
+        result = train_main()
+        
+        if result is None:
+            print("❌ Train With Best Params thất bại")
+            return False
+        
+        print("✓ Hoàn thành Train With Best Params")
+        return True
+    
+    except Exception as e:
+        print(f"❌ Lỗi khi chạy Train With Best Params: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def run_model_evaluation():
     """
     BƯỚC 5: MODEL EVALUATION & ANALYSIS
-    Đánh giá tất cả mô hình và chọn mô hình tốt nhất
+    So sánh models từ k-fold validation results (untuned vs tuned)
     """
     print("\n" + "="*80)
     print("BƯỚC 5: MODEL EVALUATION & ANALYSIS")
@@ -178,33 +180,6 @@ def run_model_evaluation():
         return False
 
 
-def run_create_submission():
-    """
-    BƯỚC 6: CREATE SUBMISSION
-    Tạo file submission cuối cùng từ model tốt nhất
-    """
-    print("\n" + "="*80)
-    print("BƯỚC 6: CREATE SUBMISSION")
-    print("="*80)
-    
-    try:
-        from create_submission import main as submission_main
-        result = submission_main()
-        
-        if result is None:
-            print("❌ Create Submission thất bại")
-            return False
-        
-        print("✓ Hoàn thành Create Submission")
-        return True
-    
-    except Exception as e:
-        print(f"❌ Lỗi khi chạy Create Submission: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
 def main(skip_steps=None):
     """
     Hàm chính để chạy toàn bộ pipeline
@@ -217,12 +192,11 @@ def main(skip_steps=None):
     print("WALMART SALES FORECASTING - FULL PIPELINE")
     print("="*80)
     print("\nPipeline sẽ chạy các bước sau:")
-    print("  1. Preprocessing")
-    print("  2. ML Data Preparation")
-    print("  3. Baseline Models")
-    print("  4. Hyperparameter Tuning")
-    print("  5. Model Evaluation & Analysis")
-    print("  6. Create Submission")
+    print("  1. Preprocessing → train_detail.csv, test_detail.csv")
+    print("  2. K-Fold Validation (Untuned) → kfold_validation_comparison.csv")
+    print("  3. Hyperparameter Tuning → tuned_models_best_params.csv")
+    print("  4. Train With Best Params → best_params_kfold_comparison.csv + submission")
+    print("  5. Model Evaluation & Analysis → final_report.md")
     
     if skip_steps:
         print(f"\n⚠️ Bỏ qua các bước: {skip_steps}")
@@ -231,11 +205,10 @@ def main(skip_steps=None):
     
     steps = [
         ("Preprocessing", run_preprocessing),
-        ("ML Data Preparation", run_ml_data_preparation),
-        ("Baseline Models", run_baseline_models),
+        ("K-Fold Validation (Untuned)", run_k_fold_validation),
         ("Hyperparameter Tuning", run_hyperparameter_tuning),
-        ("Model Evaluation", run_model_evaluation),
-        ("Create Submission", run_create_submission)
+        ("Train With Best Params", run_train_with_best_params),
+        ("Model Evaluation & Analysis", run_model_evaluation)
     ]
     
     results = {}
@@ -275,8 +248,10 @@ def main(skip_steps=None):
         print("🎉 HOÀN THÀNH TOÀN BỘ PIPELINE!")
         print("="*80)
         print("\nCác file output quan trọng:")
-        print("  - output/submission.csv (File submission cuối cùng)")
-        print("  - models/best_model.pkl (Model tốt nhất)")
+        print("  - output/submission_*.csv (File submission từ models)")
+        print("  - output/kfold_validation_comparison.csv (Kết quả untuned models)")
+        print("  - output/best_params_kfold_comparison.csv (Kết quả tuned models)")
+        print("  - output/reports/tuned_models_best_params.csv (Best parameters)")
         print("  - output/reports/final_model_comparison.csv (So sánh các models)")
         print("  - output/reports/final_report.md (Báo cáo cuối cùng)")
     else:
@@ -306,13 +281,13 @@ Ví dụ:
         '--skip',
         type=int,
         nargs='+',
-        help='Danh sách các bước cần bỏ qua (1-6)'
+        help='Danh sách các bước cần bỏ qua (1-5)'
     )
     
     parser.add_argument(
         '--from-step',
         type=int,
-        help='Bắt đầu từ bước này (1-6). Các bước trước đó sẽ được bỏ qua.'
+        help='Bắt đầu từ bước này (1-5). Các bước trước đó sẽ được bỏ qua.'
     )
     
     args = parser.parse_args()
