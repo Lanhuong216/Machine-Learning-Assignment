@@ -73,7 +73,7 @@ plt.tight_layout()
 output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'holiday_effect.png')
 plt.savefig(output_path, dpi=300, bbox_inches='tight')
 plt.close()
-print(f"✓ Đã lưu: {output_path}")
+print(f"Đã lưu: {output_path}")
 
 # Calculate mean and median of Weekly_Sales by Date
 sales_by_date = train_detail.groupby('Date')['Weekly_Sales'].agg(['mean', 'median']).reset_index()
@@ -110,7 +110,7 @@ plt.tight_layout()
 output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'mean_median_sales_over_time.png')
 plt.savefig(output_path, dpi=300, bbox_inches='tight')
 plt.close()
-print(f"✓ Đã lưu: {output_path}")
+print(f"Đã lưu: {output_path}")
 
 # Calculate average sales by Store
 sales_by_store = train_detail.groupby('Store')['Weekly_Sales'].mean().sort_index(ascending=True)
@@ -136,7 +136,7 @@ plt.tight_layout()
 output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'average_sales_by_store.png')
 plt.savefig(output_path, dpi=300, bbox_inches='tight')
 plt.close()
-print(f"✓ Đã lưu: {output_path}")
+print(f"Đã lưu: {output_path}")
 
 fig, (ax2) = plt.subplots(1, figsize=(18, 6))
 # Bar plot: Average Sales by Dept
@@ -151,7 +151,7 @@ plt.tight_layout()
 output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'average_sales_by_dept.png')
 plt.savefig(output_path, dpi=300, bbox_inches='tight')
 plt.close()
-print(f"✓ Đã lưu: {output_path}")
+print(f"Đã lưu: {output_path}")
 
 #correlation matrix
 numeric_cols = train_detail.select_dtypes(include=[np.number]).columns.tolist()
@@ -164,7 +164,7 @@ plt.tight_layout()
 output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'correlation_matrix.png')
 plt.savefig(output_path, dpi=300, bbox_inches='tight')
 plt.close()
-print(f"✓ Đã lưu: {output_path}")
+print(f"Đã lưu: {output_path}")
 
 # Function to plot boxplot between two fields
 def plot_boxplot(x_column, data=train_detail, figsize=(10, 6), title=None, rotation=45):
@@ -206,7 +206,7 @@ def plot_boxplot(x_column, data=train_detail, figsize=(10, 6), title=None, rotat
     output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, f'boxplot_{x_column.lower().replace(" ", "_")}.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Đã lưu: {output_path}")
+    print(f"Đã lưu: {output_path}")
     
     # Print statistics
     print(f"\nStatistics by {x_column}:")
@@ -294,7 +294,7 @@ def plot_correlation(x_column, data=train_detail, figsize=(10, 6), title=None, a
     output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, f'correlation_{x_column.lower().replace(" ", "_")}.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Đã lưu: {output_path}")
+    print(f"Đã lưu: {output_path}")
     
     # Print statistics
     print(f"\nCorrelation Analysis: {x_column} vs Weekly_Sales")
@@ -318,9 +318,7 @@ plot_correlation('Size')
 # =============================================================================
 # CHỌN VÀ LƯU CÁC FEATURES ĐÃ CHỈ ĐỊNH
 # =============================================================================
-print("\n" + "="*80)
-print("CHỌN VÀ LƯU CÁC FEATURES")
-print("="*80)
+print("\n CHỌN VÀ LƯU CÁC FEATURES")
 
 # Danh sách features được chỉ định
 selected_features = ['Store', 'Dept', 'IsHoliday', 'Size', 'Type', 'Year', 'Week', 'Month']
@@ -329,7 +327,7 @@ selected_features = ['Store', 'Dept', 'IsHoliday', 'Size', 'Type', 'Year', 'Week
 available_features = [f for f in selected_features if f in train_detail.columns]
 missing_features = [f for f in selected_features if f not in train_detail.columns]
 
-print(f"\n✓ Sử dụng {len(available_features)}/{len(selected_features)} features:")
+print(f"\n Sử dụng {len(available_features)}/{len(selected_features)} features:")
 for i, feature in enumerate(available_features, 1):
     print(f"  {i:2d}. {feature}")
 
@@ -369,8 +367,8 @@ for col in available_features:
 train_detail_selected.to_csv(os.path.join(DATA_PROCESSED_DIR, 'train_detail.csv'), index=False)
 test_detail_selected.to_csv(os.path.join(DATA_PROCESSED_DIR, 'test_detail.csv'), index=False)
 
-print(f"✓ Đã lưu train_detail.csv: {train_detail_selected.shape}")
-print(f"✓ Đã lưu test_detail.csv: {test_detail_selected.shape}")
+print(f"Đã lưu train_detail.csv: {train_detail_selected.shape}")
+print(f"Đã lưu test_detail.csv: {test_detail_selected.shape}")
 
 # Lưu thông tin summary
 print(f"\nTrain Detail Summary (sau khi chọn features):")
@@ -393,5 +391,4 @@ if 'Store' in test_detail_selected.columns:
 if 'Dept' in test_detail_selected.columns:
     print(f"  - Departments: {test_detail_selected['Dept'].nunique()}")
 
-print("\n✓ HOÀN THÀNH PREPROCESSING!")
-print("Bây giờ có thể sử dụng train_detail.csv và test_detail.csv cho ML pipeline")
+print("\n HOÀN THÀNH PREPROCESSING!")

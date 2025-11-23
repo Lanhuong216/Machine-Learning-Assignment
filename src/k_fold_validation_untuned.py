@@ -28,16 +28,12 @@ def load_preprocessed_data():
     Returns:
         tuple: (train_detail, feature_names) hoặc (None, None) nếu lỗi
     """
-    print("="*80)
-    print("LOAD DỮ LIỆU ĐÃ PREPROCESS")
-    print("="*80)
+    print("\n LOAD DỮ LIỆU ĐÃ PREPROCESS: ")
     
     train_detail_path = os.path.join(DATA_PROCESSED_DIR, 'train_detail.csv')
     feature_chosen_path = os.path.join(DATA_PROCESSED_DIR, 'feature_chosen.csv')
     
     if not os.path.exists(train_detail_path):
-        print(f"❌ Không tìm thấy file: {train_detail_path}")
-        print("   Vui lòng chạy preprocessing.py trước")
         return None, None
     
     try:
@@ -55,16 +51,10 @@ def load_preprocessed_data():
             # Nếu không có feature_chosen.csv, lấy tất cả features trừ Date và Weekly_Sales
             feature_names = [col for col in train_detail.columns 
                            if col not in ['Store', 'Dept', 'Date', 'Weekly_Sales']]
-            print(f"⚠️ Không tìm thấy feature_chosen.csv, sử dụng tất cả {len(feature_names)} features")
-        
-        print(f"✓ Đã load train_detail: {train_detail.shape}")
-        print(f"✓ Số features: {len(feature_names)}")
-        print(f"  Features: {feature_names[:5]}..." if len(feature_names) > 5 else f"  Features: {feature_names}")
         
         return train_detail, feature_names
     
     except Exception as e:
-        print(f"❌ Lỗi khi load dữ liệu: {e}")
         import traceback
         traceback.print_exc()
         return None, None
@@ -81,20 +71,14 @@ def prepare_data_for_ml(train_detail, feature_names):
     Returns:
         tuple: (X, y) hoặc (None, None) nếu lỗi
     """
-    print("\n" + "="*80)
-    print("CHUẨN BỊ DỮ LIỆU CHO ML")
-    print("="*80)
+    print("\n CHUẨN BỊ DỮ LIỆU CHO ML: ")
     
     try:
         # Kiểm tra các features có trong train_detail không
         available_features = [f for f in feature_names if f in train_detail.columns]
         missing_features = [f for f in feature_names if f not in train_detail.columns]
         
-        if missing_features:
-            print(f"⚠️ Thiếu {len(missing_features)} features: {missing_features[:3]}...")
-        
         if len(available_features) == 0:
-            print("❌ Không có features nào khả dụng")
             return None, None
         
         # Tạo X và y
@@ -104,14 +88,9 @@ def prepare_data_for_ml(train_detail, feature_names):
         # Xử lý missing values
         X = X.fillna(0)
         
-        print(f"✓ X shape: {X.shape}")
-        print(f"✓ y shape: {y.shape}")
-        print(f"✓ Sử dụng {len(available_features)} features")
-        
         return X, y, available_features
     
     except Exception as e:
-        print(f"❌ Lỗi khi chuẩn bị dữ liệu: {e}")
         import traceback
         traceback.print_exc()
         return None, None, None
@@ -174,9 +153,7 @@ def k_fold_cross_validation(X, y, model, model_name, k=5, train_detail=None):
     Returns:
         dict: Kết quả cross-validation
     """
-    print(f"\n{'='*80}")
-    print(f"K-FOLD CROSS-VALIDATION: {model_name} (K={k})")
-    print(f"{'='*80}")
+    print(f"\n K-FOLD CROSS-VALIDATION: {model_name} (K={k})")
     
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
     
@@ -194,7 +171,6 @@ def k_fold_cross_validation(X, y, model, model_name, k=5, train_detail=None):
         is_holiday = train_detail['IsHoliday'].values
     
     for fold, (train_idx, val_idx) in enumerate(kf.split(X), 1):
-        print(f"\n--- Fold {fold}/{k} ---")
         
         # Split data
         X_train_fold = X.iloc[train_idx]
@@ -228,11 +204,6 @@ def k_fold_cross_validation(X, y, model, model_name, k=5, train_detail=None):
         fold_results['wmae'].append(wmae)
         fold_results['train_time'].append(train_time)
         
-        print(f"  MAE: {mae:.2f}")
-        print(f"  RMSE: {rmse:.2f}")
-        print(f"  R²: {r2:.4f}")
-        print(f"  WMAE: {wmae:.2f}")
-        print(f"  Train time: {train_time:.2f}s")
     
     # Tính trung bình và std
     results = {
@@ -249,12 +220,6 @@ def k_fold_cross_validation(X, y, model, model_name, k=5, train_detail=None):
         'fold_results': fold_results
     }
     
-    print(f"\n--- Kết quả trung bình ({k} folds) ---")
-    print(f"  MAE: {results['mean_mae']:.2f} ± {results['std_mae']:.2f}")
-    print(f"  RMSE: {results['mean_rmse']:.2f} ± {results['std_rmse']:.2f}")
-    print(f"  R²: {results['mean_r2']:.4f} ± {results['std_r2']:.4f}")
-    print(f"  WMAE: {results['mean_wmae']:.2f} ± {results['std_wmae']:.2f}")
-    print(f"  Train time: {results['mean_train_time']:.2f}s")
     
     return results
 
@@ -273,9 +238,7 @@ def train_final_model(X, y, model, model_name, train_detail=None):
     Returns:
         tuple: (trained_model, metrics)
     """
-    print(f"\n{'='*80}")
-    print(f"TRAIN MODEL CUỐI CÙNG: {model_name}")
-    print(f"{'='*80}")
+    print(f"\n TRAIN MODEL CUỐI CÙNG: {model_name}")
     
     start_time = time.time()
     model.fit(X, y)
@@ -304,12 +267,7 @@ def train_final_model(X, y, model, model_name, train_detail=None):
         'train_time': train_time
     }
     
-    print(f"✓ MAE: {mae:.2f}")
-    print(f"✓ RMSE: {rmse:.2f}")
-    print(f"✓ R²: {r2:.4f}")
-    print(f"✓ WMAE: {wmae:.2f}")
-    print(f"✓ Train time: {train_time:.2f}s")
-    
+
     return model, metrics
 
 
@@ -322,14 +280,11 @@ def create_submission_from_best_model(best_model, best_model_name, feature_names
         best_model_name: Tên model
         feature_names: Danh sách feature names
     """
-    print(f"\n{'='*80}")
-    print("TẠO SUBMISSION TỪ MODEL TỐT NHẤT")
-    print(f"{'='*80}")
+    print(f"\n TẠO SUBMISSION TỪ MODEL TỐT NHẤT")
     
     # Load test_detail
     test_detail_path = os.path.join(DATA_PROCESSED_DIR, 'test_detail.csv')
     if not os.path.exists(test_detail_path):
-        print(f"❌ Không tìm thấy file: {test_detail_path}")
         return None
     
     try:
@@ -343,7 +298,6 @@ def create_submission_from_best_model(best_model, best_model_name, feature_names
         X_test = X_test.fillna(0)
         
         # Predict
-        print("Đang dự đoán...")
         predictions = best_model.predict(X_test)
         predictions = np.maximum(predictions, 0)  # Đảm bảo không âm
         
@@ -365,16 +319,9 @@ def create_submission_from_best_model(best_model, best_model_name, feature_names
         output_path = os.path.join(OUTPUT_DIR, f'submission_{best_model_name.lower().replace(" ", "_")}.csv')
         submission.to_csv(output_path, index=False)
         
-        print(f"✓ Đã tạo submission: {output_path}")
-        print(f"  - Số dòng: {len(submission)}")
-        print(f"  - Min: {predictions.min():.2f}")
-        print(f"  - Max: {predictions.max():.2f}")
-        print(f"  - Mean: {np.mean(predictions):.2f}")
-        
         return submission
     
     except Exception as e:
-        print(f"❌ Lỗi khi tạo submission: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -382,9 +329,7 @@ def create_submission_from_best_model(best_model, best_model_name, feature_names
 
 def main():
     """Hàm chính"""
-    print("="*80)
-    print("K-FOLD CROSS-VALIDATION: RANDOM FOREST vs XGBOOST")
-    print("="*80)
+    print("\n K-FOLD CROSS-VALIDATION: RANDOM FOREST vs XGBOOST")
     
     # 1. Load data
     train_detail, feature_names = load_preprocessed_data()
@@ -401,9 +346,7 @@ def main():
     results = {}
     
     # Random Forest
-    print("\n" + "="*80)
-    print("MODEL 1: RANDOM FOREST")
-    print("="*80)
+    print("\n MODEL 1: RANDOM FOREST")
     rf_model = RandomForestRegressor(
         n_estimators=100,
         max_depth=20,
@@ -418,9 +361,7 @@ def main():
     results['Random Forest'] = rf_results
     
     # XGBoost
-    print("\n" + "="*80)
-    print("MODEL 2: XGBOOST")
-    print("="*80)
+    print("\n MODEL 2: XGBOOST")
     xgb_model = xgb.XGBRegressor(
         n_estimators=100,
         max_depth=6,
@@ -434,9 +375,7 @@ def main():
     results['XGBoost'] = xgb_results
     
     # 4. So sánh và chọn model tốt nhất
-    print("\n" + "="*80)
-    print("SO SÁNH VÀ CHỌN MODEL TỐT NHẤT")
-    print("="*80)
+    print("\n SO SÁNH VÀ CHỌN MODEL TỐT NHẤT")
     
     comparison_data = []
     for model_name, model_results in results.items():
@@ -462,13 +401,8 @@ def main():
     best_model_name = comparison_df.iloc[0]['Model']
     best_wmae = comparison_df.iloc[0]['Mean_WMAE']
     
-    print(f"\n🏆 MODEL TỐT NHẤT: {best_model_name}")
-    print(f"   WMAE: {best_wmae:.2f} ± {comparison_df.iloc[0]['Std_WMAE']:.2f}")
-    
     # 5. Train model tốt nhất trên toàn bộ dữ liệu
-    print("\n" + "="*80)
-    print("TRAIN MODEL TỐT NHẤT TRÊN TOÀN BỘ DỮ LIỆU")
-    print("="*80)
+    print("\n TRAIN MODEL TỐT NHẤT TRÊN TOÀN BỘ DỮ LIỆU")
     
     if best_model_name == "Random Forest":
         best_model = RandomForestRegressor(
@@ -500,11 +434,9 @@ def main():
     # 8. Lưu kết quả so sánh
     comparison_path = os.path.join(OUTPUT_DIR, 'kfold_validation_comparison.csv')
     comparison_df.to_csv(comparison_path, index=False)
-    print(f"\n✓ Đã lưu kết quả so sánh: {comparison_path}")
+    print(f"\nĐã lưu kết quả so sánh: {comparison_path}")
     
-    print("\n" + "="*80)
-    print("✓ HOÀN THÀNH K-FOLD VALIDATION!")
-    print("="*80)
+    print("\n HOÀN THÀNH K-FOLD VALIDATION!")
     
     return {
         'results': results,

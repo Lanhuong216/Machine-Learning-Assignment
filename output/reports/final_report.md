@@ -1,6 +1,6 @@
 # BÁO CÁO CUỐI CÙNG - WALMART SALES FORECASTING
 
-**Ngày tạo:** 2025-11-23 23:40:46
+**Ngày tạo:** 2025-11-24 00:35:49
 
 ## TỔNG QUAN
 
@@ -38,10 +38,10 @@ Pipeline được thực hiện theo các bước sau:
 
 ```
                   Model  Mean_WMAE  Std_WMAE  Mean_MAE  Std_MAE  Mean_RMSE  Std_RMSE  Mean_R2  Std_R2  Mean_Train_Time
-        XGBoost (Tuned)  1246.9071    8.0617 1134.1198   6.0946  2511.5140   54.0841   0.9878  0.0005          13.8660
-Random Forest (Untuned)  1535.2139   13.8873 1380.6197  11.3110  3310.4627  135.3429   0.9787  0.0016          14.3484
-  Random Forest (Tuned)  1552.3776   14.8446 1360.9112   8.7214  3500.3502   84.0591   0.9762  0.0010          29.2180
-      XGBoost (Untuned)  4065.6836   22.9553 3900.7808  22.7252  6985.2421   51.0073   0.9054  0.0015           1.0070
+        XGBoost (Tuned)  1246.9071    8.0617 1134.1198   6.0946  2511.5140   54.0841   0.9878  0.0005          12.7271
+Random Forest (Untuned)  1535.2139   13.8873 1380.6197  11.3110  3310.4627  135.3429   0.9787  0.0016          20.8028
+  Random Forest (Tuned)  1552.3776   14.8446 1360.9112   8.7214  3500.3502   84.0591   0.9762  0.0010          31.7834
+      XGBoost (Untuned)  4065.6836   22.9553 3900.7808  22.7252  6985.2421   51.0073   0.9054  0.0015           1.5876
 ```
 
 ## MÔ HÌNH TỐT NHẤT
@@ -51,7 +51,7 @@ Random Forest (Untuned)  1535.2139   13.8873 1380.6197  11.3110  3310.4627  135.
 - **Mean MAE:** 1134.12 ± 6.09
 - **Mean RMSE:** 2511.51 ± 54.08
 - **Mean R²:** 0.9878 ± 0.0005
-- **Mean Train Time:** 13.87s
+- **Mean Train Time:** 12.73s
 
 ## PHÂN TÍCH KẾT QUẢ
 

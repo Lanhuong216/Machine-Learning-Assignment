@@ -21,19 +21,14 @@ def run_preprocessing():
     BƯỚC 1: PREPROCESSING
     Load và merge dữ liệu raw, tạo train_detail và test_detail
     """
-    print("\n" + "="*80)
-    print("BƯỚC 1: PREPROCESSING")
-    print("="*80)
+    print("\n BƯỚC 1: PREPROCESSING")
     
     # Kiểm tra xem đã có train_detail và test_detail chưa
     train_detail_path = os.path.join(DATA_PROCESSED_DIR, 'train_detail.csv')
     test_detail_path = os.path.join(DATA_PROCESSED_DIR, 'test_detail.csv')
     
     if os.path.exists(train_detail_path) and os.path.exists(test_detail_path):
-        print("✓ Đã có train_detail.csv và test_detail.csv, bỏ qua preprocessing")
         return True
-    
-    print("Chạy preprocessing...")
     
     try:
         # Chạy preprocessing.py như một script riêng
@@ -41,7 +36,6 @@ def run_preprocessing():
         preprocessing_script = os.path.join('src', 'preprocessing.py')
         
         if not os.path.exists(preprocessing_script):
-            print(f"❌ Không tìm thấy file: {preprocessing_script}")
             return False
         
         # Chạy script
@@ -52,19 +46,18 @@ def run_preprocessing():
         )
         
         if result.returncode != 0:
-            print(f"❌ Preprocessing thất bại với exit code: {result.returncode}")
+            print(f"Preprocessing thất bại với exit code: {result.returncode}")
             return False
         
         # Kiểm tra lại sau khi chạy
         if os.path.exists(train_detail_path) and os.path.exists(test_detail_path):
-            print("✓ Hoàn thành preprocessing")
+            print("Hoàn thành preprocessing")
             return True
         else:
-            print("❌ Preprocessing không tạo được files")
+            print("Preprocessing không tạo được files")
             return False
     
     except Exception as e:
-        print(f"❌ Lỗi khi chạy preprocessing: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -75,23 +68,21 @@ def run_k_fold_validation():
     BƯỚC 2: K-FOLD VALIDATION (UNTUNED MODELS)
     Chạy k-fold validation cho Random Forest và XGBoost chưa tuning
     """
-    print("\n" + "="*80)
-    print("BƯỚC 2: K-FOLD VALIDATION (UNTUNED MODELS)")
-    print("="*80)
+    print("\n BƯỚC 2: K-FOLD VALIDATION (UNTUNED MODELS)")
     
     try:
-        from k_fold_validation import main as kfold_main
+        from k_fold_validation_untuned import main as kfold_main
         result = kfold_main()
         
         if result is None:
-            print("❌ K-Fold Validation thất bại")
+            print("K-Fold Validation thất bại")
             return False
         
-        print("✓ Hoàn thành K-Fold Validation")
+        print("Hoàn thành K-Fold Validation")
         return True
     
     except Exception as e:
-        print(f"❌ Lỗi khi chạy K-Fold Validation: {e}")
+        print(f"Lỗi khi chạy K-Fold Validation: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -103,23 +94,21 @@ def run_hyperparameter_tuning():
     Tuning hyperparameters cho Random Forest và XGBoost
     Xuất ra tuned_models_best_params.csv
     """
-    print("\n" + "="*80)
-    print("BƯỚC 3: HYPERPARAMETER TUNING")
-    print("="*80)
+    print("\n BƯỚC 3: HYPERPARAMETER TUNING")
     
     try:
         from hyperparameter_tuning import main as tuning_main
         result = tuning_main()
         
         if result is None:
-            print("❌ Hyperparameter Tuning thất bại")
+            print("Hyperparameter Tuning thất bại")
             return False
         
-        print("✓ Hoàn thành Hyperparameter Tuning")
+        print("Hoàn thành Hyperparameter Tuning")
         return True
     
     except Exception as e:
-        print(f"❌ Lỗi khi chạy Hyperparameter Tuning: {e}")
+        print(f"Lỗi khi chạy Hyperparameter Tuning: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -131,23 +120,21 @@ def run_train_with_best_params():
     Train models với best parameters từ tuned_models_best_params.csv
     Sử dụng k-fold validation và xuất submission
     """
-    print("\n" + "="*80)
-    print("BƯỚC 4: TRAIN WITH BEST PARAMS")
-    print("="*80)
+    print("\n BƯỚC 4: TRAIN WITH BEST PARAMS")
     
     try:
-        from train_with_best_params import main as train_main
+        from k_fold_validation_tuned import main as train_main
         result = train_main()
         
         if result is None:
-            print("❌ Train With Best Params thất bại")
+            print("Train With Best Params thất bại")
             return False
         
-        print("✓ Hoàn thành Train With Best Params")
+        print("Hoàn thành Train With Best Params")
         return True
     
     except Exception as e:
-        print(f"❌ Lỗi khi chạy Train With Best Params: {e}")
+        print(f"Lỗi khi chạy Train With Best Params: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -158,23 +145,21 @@ def run_model_evaluation():
     BƯỚC 5: MODEL EVALUATION & ANALYSIS
     So sánh models từ k-fold validation results (untuned vs tuned)
     """
-    print("\n" + "="*80)
-    print("BƯỚC 5: MODEL EVALUATION & ANALYSIS")
-    print("="*80)
+    print("\n BƯỚC 5: MODEL EVALUATION & ANALYSIS")
     
     try:
         from model_evaluation_analysis import main as eval_main
         result = eval_main()
         
         if result is None:
-            print("❌ Model Evaluation thất bại")
+            print("Model Evaluation thất bại")
             return False
         
-        print("✓ Hoàn thành Model Evaluation & Analysis")
+        print("Hoàn thành Model Evaluation & Analysis")
         return True
     
     except Exception as e:
-        print(f"❌ Lỗi khi chạy Model Evaluation: {e}")
+        print(f"Lỗi khi chạy Model Evaluation: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -188,9 +173,7 @@ def main(skip_steps=None):
         skip_steps (list): Danh sách các bước cần bỏ qua (1-6)
                            Ví dụ: [1, 2] để bỏ qua preprocessing và ml_data_preparation
     """
-    print("="*80)
-    print("WALMART SALES FORECASTING - FULL PIPELINE")
-    print("="*80)
+    print("\n WALMART   SALES FORECASTING - FULL PIPELINE")
     print("\nPipeline sẽ chạy các bước sau:")
     print("  1. Preprocessing → train_detail.csv, test_detail.csv")
     print("  2. K-Fold Validation (Untuned) → kfold_validation_comparison.csv")
@@ -199,9 +182,7 @@ def main(skip_steps=None):
     print("  5. Model Evaluation & Analysis → final_report.md")
     
     if skip_steps:
-        print(f"\n⚠️ Bỏ qua các bước: {skip_steps}")
-    
-    print("\n" + "="*80)
+        print(f"\n Bỏ qua các bước: {skip_steps}")
     
     steps = [
         ("Preprocessing", run_preprocessing),
@@ -215,38 +196,32 @@ def main(skip_steps=None):
     
     for step_num, (step_name, step_func) in enumerate(steps, 1):
         if skip_steps and step_num in skip_steps:
-            print(f"\n⏭️ Bỏ qua bước {step_num}: {step_name}")
+            print(f"\n Bỏ qua bước {step_num}: {step_name}")
             results[step_num] = "Skipped"
             continue
         
-        print(f"\n{'='*80}")
-        print(f"BẮT ĐẦU BƯỚC {step_num}: {step_name}")
-        print(f"{'='*80}")
+        print(f"\n BẮT ĐẦU BƯỚC {step_num}: {step_name}")
         
         success = step_func()
         results[step_num] = "Success" if success else "Failed"
         
         if not success:
-            print(f"\n❌ Bước {step_num} ({step_name}) thất bại!")
+            print(f"\n Không thành công bước {step_num} ({step_name})!")
             print("Dừng pipeline.")
             break
     
     # Tóm tắt kết quả
-    print("\n" + "="*80)
-    print("TÓM TẮT KẾT QUẢ")
-    print("="*80)
+    print("\n TÓM TẮT KẾT QUẢ")
     
     for step_num, (step_name, _) in enumerate(steps, 1):
         status = results.get(step_num, "Not run")
-        status_icon = "✓" if status == "Success" else "⏭️" if status == "Skipped" else "❌"
-        print(f"{status_icon} Bước {step_num}: {step_name} - {status}")
+        status_icon = "Success" if status == "Success" else "Skipped" if status == "Skipped" else "Failed"
+        print(f"Bước {step_num}: {step_name} - {status}")
     
     all_success = all(v == "Success" or v == "Skipped" for v in results.values())
     
     if all_success:
-        print("\n" + "="*80)
-        print("🎉 HOÀN THÀNH TOÀN BỘ PIPELINE!")
-        print("="*80)
+        print("\n HOÀN THÀNH TOÀN BỘ PIPELINE!")
         print("\nCác file output quan trọng:")
         print("  - output/submission_*.csv (File submission từ models)")
         print("  - output/kfold_validation_comparison.csv (Kết quả untuned models)")
@@ -255,9 +230,7 @@ def main(skip_steps=None):
         print("  - output/reports/final_model_comparison.csv (So sánh các models)")
         print("  - output/reports/final_report.md (Báo cáo cuối cùng)")
     else:
-        print("\n" + "="*80)
-        print("⚠️ PIPELINE KHÔNG HOÀN THÀNH ĐẦY ĐỦ")
-        print("="*80)
+        print("\n PIPELINE KHÔNG HOÀN THÀNH ĐẦY ĐỦ")
         print("Vui lòng kiểm tra lỗi ở các bước trên và chạy lại.")
     
     return results
