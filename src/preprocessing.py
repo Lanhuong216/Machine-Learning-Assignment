@@ -9,7 +9,7 @@ sns.set_style("whitegrid")
 
 # Import config
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from config import DATA_RAW_DIR, DATA_PROCESSED_DIR
+from config import DATA_RAW_DIR, DATA_PROCESSED_DIR, OUTPUT_VISUALIZATIONS_DIR
 
 #load the data
 features=pd.read_csv(os.path.join(DATA_RAW_DIR, "walmart-features.csv"))
@@ -36,9 +36,10 @@ feature_store.Date=pd.to_datetime(feature_store.Date)
 train.Date=pd.to_datetime(train.Date)
 test.Date=pd.to_datetime(test.Date)
 
-#add the week and year to the feature_store
+#add the week, month, year, and day to the feature_store
 feature_store['Week']=feature_store.Date.dt.isocalendar().week
-feature_store['Year']=feature_store.Date.dt.year 
+feature_store['Month']=feature_store.Date.dt.month
+feature_store['Year']=feature_store.Date.dt.year
 
 #merge the train data and test data with the feature_store
 train_detail=train.merge(feature_store, how="inner", on=["Store","Date", "IsHoliday"]).sort_values(by=["Store","Dept","Date"]).reset_index(drop=True)
@@ -68,7 +69,11 @@ holiday_sales_plot=holiday_sales.plot(kind='bar', color=['skyblue', 'salmon'])
 plt.xlabel('IsHoliday')
 plt.ylabel('Average Sales')
 plt.title('Holiday Effect')
-plt.show()
+plt.tight_layout()
+output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'holiday_effect.png')
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
+plt.close()
+print(f"✓ Đã lưu: {output_path}")
 
 # Calculate mean and median of Weekly_Sales by Date
 sales_by_date = train_detail.groupby('Date')['Weekly_Sales'].agg(['mean', 'median']).reset_index()
@@ -102,7 +107,10 @@ ax1.tick_params(axis='x', rotation=45)
 correlation = sales_by_date['mean'].corr(sales_by_date['median'])
 
 plt.tight_layout()
-plt.show()
+output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'mean_median_sales_over_time.png')
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
+plt.close()
+print(f"✓ Đã lưu: {output_path}")
 
 # Calculate average sales by Store
 sales_by_store = train_detail.groupby('Store')['Weekly_Sales'].mean().sort_index(ascending=True)
@@ -125,7 +133,10 @@ ax1.set_title('Average Weekly Sales by Store', fontsize=14, fontweight='bold')
 ax1.tick_params(axis='x', rotation=90, labelsize=8)
 ax1.grid(True, alpha=0.3, axis='y')
 plt.tight_layout()
-plt.show()
+output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'average_sales_by_store.png')
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
+plt.close()
+print(f"✓ Đã lưu: {output_path}")
 
 fig, (ax2) = plt.subplots(1, figsize=(18, 6))
 # Bar plot: Average Sales by Dept
@@ -137,7 +148,10 @@ ax2.tick_params(axis='x', rotation=45, labelsize=8)
 ax2.grid(True, alpha=0.3, axis='y')
 
 plt.tight_layout()
-plt.show()
+output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'average_sales_by_dept.png')
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
+plt.close()
+print(f"✓ Đã lưu: {output_path}")
 
 #correlation matrix
 numeric_cols = train_detail.select_dtypes(include=[np.number]).columns.tolist()
@@ -147,7 +161,10 @@ plt.figure(figsize=(14, 12))
 sns.heatmap(correlation_matrix,  annot=True, cmap='coolwarm', center=0, square=True, linewidths=0.5, cbar_kws={"shrink": 0.8}, vmin=-1, vmax=1)
 plt.title('Correlation Matrix of Numeric Fields in train_detail', fontsize=14, fontweight='bold', pad=20)
 plt.tight_layout()
-plt.show()
+output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, 'correlation_matrix.png')
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
+plt.close()
+print(f"✓ Đã lưu: {output_path}")
 
 # Function to plot boxplot between two fields
 def plot_boxplot(x_column, data=train_detail, figsize=(10, 6), title=None, rotation=45):
@@ -186,7 +203,10 @@ def plot_boxplot(x_column, data=train_detail, figsize=(10, 6), title=None, rotat
     plt.grid(True, alpha=0.3, axis='y')
     
     plt.tight_layout()
-    plt.show()
+    output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, f'boxplot_{x_column.lower().replace(" ", "_")}.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"✓ Đã lưu: {output_path}")
     
     # Print statistics
     print(f"\nStatistics by {x_column}:")
@@ -271,7 +291,10 @@ def plot_correlation(x_column, data=train_detail, figsize=(10, 6), title=None, a
         ax2.set_ylabel('Weekly Sales', fontsize=12)
     
     plt.tight_layout()
-    plt.show()
+    output_path = os.path.join(OUTPUT_VISUALIZATIONS_DIR, f'correlation_{x_column.lower().replace(" ", "_")}.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"✓ Đã lưu: {output_path}")
     
     # Print statistics
     print(f"\nCorrelation Analysis: {x_column} vs Weekly_Sales")
@@ -293,33 +316,82 @@ plot_correlation('Unemployment')
 plot_correlation('Size')
 
 # =============================================================================
-# LƯU DỮ LIỆU ĐÃ PREPROCESS
+# CHỌN VÀ LƯU CÁC FEATURES ĐÃ CHỈ ĐỊNH
 # =============================================================================
 print("\n" + "="*80)
-print("LƯU DỮ LIỆU ĐÃ PREPROCESS")
+print("CHỌN VÀ LƯU CÁC FEATURES")
 print("="*80)
 
-# Lưu train_detail và test_detail ra file CSV
-train_detail.to_csv(os.path.join(DATA_PROCESSED_DIR, 'train_detail.csv'), index=False)
-test_detail.to_csv(os.path.join(DATA_PROCESSED_DIR, 'test_detail.csv'), index=False)
+# Danh sách features được chỉ định
+selected_features = ['Store', 'Dept', 'IsHoliday', 'Size', 'Type', 'Year', 'Week', 'Month']
 
-print(f"✓ Đã lưu train_detail.csv: {train_detail.shape}")
-print(f"✓ Đã lưu test_detail.csv: {test_detail.shape}")
+# Kiểm tra các features có trong train_detail không
+available_features = [f for f in selected_features if f in train_detail.columns]
+missing_features = [f for f in selected_features if f not in train_detail.columns]
+
+print(f"\n✓ Sử dụng {len(available_features)}/{len(selected_features)} features:")
+for i, feature in enumerate(available_features, 1):
+    print(f"  {i:2d}. {feature}")
+
+# Lưu danh sách features đã chọn vào feature_chosen.csv
+feature_chosen_df = pd.DataFrame({
+    'Feature': available_features,
+    'Selected': ['Yes'] * len(available_features)
+})
+feature_chosen_path = os.path.join(DATA_PROCESSED_DIR, 'feature_chosen.csv')
+feature_chosen_df.to_csv(feature_chosen_path, index=False)
+
+# Xác định các cột cần giữ lại cho train_detail
+# train_detail cần: Date, Weekly_Sales + các features đã chọn
+train_keep_cols = ['Date', 'Weekly_Sales'] + available_features
+train_keep_cols = [col for col in train_keep_cols if col in train_detail.columns]
+
+# Xác định các cột cần giữ lại cho test_detail
+# test_detail cần: Date + các features đã chọn (không có Weekly_Sales)
+test_keep_cols = ['Date'] + available_features
+test_keep_cols = [col for col in test_keep_cols if col in test_detail.columns]
+
+# Tạo train_detail và test_detail chỉ với features đã chọn
+train_detail_selected = train_detail[train_keep_cols].copy()
+test_detail_selected = test_detail[test_keep_cols].copy()
+
+# Xử lý missing values cho các features đã chọn
+# Chỉ fillna cho các cột numeric, giữ nguyên boolean/categorical
+for col in available_features:
+    if col in train_detail_selected.columns:
+        if train_detail_selected[col].dtype in [np.float64, np.int64]:
+            train_detail_selected[col] = train_detail_selected[col].fillna(0)
+    if col in test_detail_selected.columns:
+        if test_detail_selected[col].dtype in [np.float64, np.int64]:
+            test_detail_selected[col] = test_detail_selected[col].fillna(0)
+
+# Lưu train_detail và test_detail ra file CSV
+train_detail_selected.to_csv(os.path.join(DATA_PROCESSED_DIR, 'train_detail.csv'), index=False)
+test_detail_selected.to_csv(os.path.join(DATA_PROCESSED_DIR, 'test_detail.csv'), index=False)
+
+print(f"✓ Đã lưu train_detail.csv: {train_detail_selected.shape}")
+print(f"✓ Đã lưu test_detail.csv: {test_detail_selected.shape}")
 
 # Lưu thông tin summary
-print(f"\nTrain Detail Summary:")
-print(f"  - Shape: {train_detail.shape}")
-print(f"  - Columns: {len(train_detail.columns)}")
-print(f"  - Date range: {train_detail['Date'].min()} to {train_detail['Date'].max()}")
-print(f"  - Stores: {train_detail['Store'].nunique()}")
-print(f"  - Departments: {train_detail['Dept'].nunique()}")
+print(f"\nTrain Detail Summary (sau khi chọn features):")
+print(f"  - Shape: {train_detail_selected.shape}")
+print(f"  - Columns: {list(train_detail_selected.columns)}")
+print(f"  - Features đã chọn: {len(available_features)}")
+print(f"  - Date range: {train_detail_selected['Date'].min()} to {train_detail_selected['Date'].max()}")
+if 'Store' in train_detail_selected.columns:
+    print(f"  - Stores: {train_detail_selected['Store'].nunique()}")
+if 'Dept' in train_detail_selected.columns:
+    print(f"  - Departments: {train_detail_selected['Dept'].nunique()}")
 
-print(f"\nTest Detail Summary:")
-print(f"  - Shape: {test_detail.shape}")
-print(f"  - Columns: {len(test_detail.columns)}")
-print(f"  - Date range: {test_detail['Date'].min()} to {test_detail['Date'].max()}")
-print(f"  - Stores: {test_detail['Store'].nunique()}")
-print(f"  - Departments: {test_detail['Dept'].nunique()}")
+print(f"\nTest Detail Summary (sau khi chọn features):")
+print(f"  - Shape: {test_detail_selected.shape}")
+print(f"  - Columns: {list(test_detail_selected.columns)}")
+print(f"  - Features đã chọn: {len(available_features)}")
+print(f"  - Date range: {test_detail_selected['Date'].min()} to {test_detail_selected['Date'].max()}")
+if 'Store' in test_detail_selected.columns:
+    print(f"  - Stores: {test_detail_selected['Store'].nunique()}")
+if 'Dept' in test_detail_selected.columns:
+    print(f"  - Departments: {test_detail_selected['Dept'].nunique()}")
 
 print("\n✓ HOÀN THÀNH PREPROCESSING!")
 print("Bây giờ có thể sử dụng train_detail.csv và test_detail.csv cho ML pipeline")
