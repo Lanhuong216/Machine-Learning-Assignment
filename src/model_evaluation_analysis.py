@@ -35,9 +35,9 @@ def load_kfold_comparison_results():
             untuned_df = pd.read_csv(untuned_path)
             print(f"✓ Đã load untuned results: {len(untuned_df)} models")
         except Exception as e:
-            print(f"⚠️ Lỗi khi load {untuned_path}: {e}")
+            print(f"Lỗi khi load {untuned_path}: {e}")
     else:
-        print(f"⚠️ Không tìm thấy: {untuned_path}")
+        print(f"Không tìm thấy: {untuned_path}")
     
     # Load tuned results
     if os.path.exists(tuned_path):
@@ -45,12 +45,12 @@ def load_kfold_comparison_results():
             tuned_df = pd.read_csv(tuned_path)
             print(f"✓ Đã load tuned results: {len(tuned_df)} models")
         except Exception as e:
-            print(f"⚠️ Lỗi khi load {tuned_path}: {e}")
+            print(f"Lỗi khi load {tuned_path}: {e}")
     else:
-        print(f"⚠️ Không tìm thấy: {tuned_path}")
+        print(f"Không tìm thấy: {tuned_path}")
     
     if untuned_df is None and tuned_df is None:
-        print("❌ Không có kết quả nào để so sánh")
+        print("Không có kết quả nào để so sánh")
         return None, None
     
     return untuned_df, tuned_df
@@ -103,7 +103,7 @@ def create_comparison_from_csv(untuned_df, tuned_df):
             })
     
     if len(comparison_data) == 0:
-        print("❌ Không có dữ liệu để so sánh")
+        print("Không có dữ liệu để so sánh")
         return None
     
     comparison_df = pd.DataFrame(comparison_data)
@@ -116,7 +116,7 @@ def create_final_comparison(comparison_df):
     print("\n=== BẢNG SO SÁNH CUỐI CÙNG ===")
     
     if comparison_df is None or len(comparison_df) == 0:
-        print("❌ Không có dữ liệu để so sánh")
+        print("Không có dữ liệu để so sánh")
         return None, None
     
     # Format để hiển thị đẹp
@@ -129,7 +129,7 @@ def create_final_comparison(comparison_df):
     
     # Tìm mô hình tốt nhất
     best_model = comparison_df.iloc[0]
-    print(f"\n🏆 MÔ HÌNH TỐT NHẤT: {best_model['Model']}")
+    print(f"\n MÔ HÌNH TỐT NHẤT: {best_model['Model']}")
     print(f"   Mean WMAE: {best_model['Mean_WMAE']:.2f} ± {best_model['Std_WMAE']:.2f}")
     print(f"   Mean MAE: {best_model['Mean_MAE']:.2f} ± {best_model['Std_MAE']:.2f}")
     print(f"   Mean R²: {best_model['Mean_R2']:.4f} ± {best_model['Std_R2']:.4f}")
@@ -323,19 +323,17 @@ def create_final_report(comparison_df, best_model):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(report)
     
-    print(f"✓ Đã lưu báo cáo: {output_path}")
+    print(f"Đã lưu báo cáo: {output_path}")
     return report
 
 def main():
     """Hàm chính để chạy BƯỚC 4"""
-    print("="*80)
-    print("BƯỚC 4: MODEL EVALUATION & ANALYSIS")
-    print("="*80)
+    print("\n BƯỚC 4: MODEL EVALUATION & ANALYSIS")
     
     # Load kết quả k-fold validation từ CSV
     untuned_df, tuned_df = load_kfold_comparison_results()
     if untuned_df is None and tuned_df is None:
-        print("\n❌ Không có kết quả để so sánh")
+        print("\n Không có kết quả để so sánh")
         print("   Vui lòng chạy k_fold_validation.py và train_with_best_params.py trước")
         return None
     
@@ -356,16 +354,14 @@ def main():
     # Lưu kết quả
     comparison_path = os.path.join(OUTPUT_REPORTS_DIR, 'final_model_comparison.csv')
     comparison_df.to_csv(comparison_path, index=False)
-    print(f"\n✓ Đã lưu: {comparison_path}")
+    print(f"\nĐã lưu: {comparison_path}")
     
-    print("\n" + "="*80)
-    print("✓ HOÀN THÀNH BƯỚC 4: MODEL EVALUATION & ANALYSIS")
-    print("="*80)
+    print("\n HOÀN THÀNH BƯỚC 4: MODEL EVALUATION & ANALYSIS")
     print("\nCác file đã được tạo:")
     print("  - final_model_comparison.csv")
     print("  - final_report.md")
     print("  - model_comparison_visualization.png")
-    print("\n🎉 HOÀN THÀNH DỰ ÁN!")
+    print("\n HOÀN THÀNH DỰ ÁN!")
     
     return {
         'comparison': comparison_df,

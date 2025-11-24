@@ -83,11 +83,11 @@ print("Mean and Median of Weekly_Sales by Date:")
 print(sales_by_date.head(10))
 
 # Calculate mean and median of Weekly_Sales by Date
-sales_by_date = train_detail.groupby('Date')['Weekly_Sales'].agg(['mean', 'median']).reset_index()
-sales_by_date = sales_by_date.sort_values('Date')
+sales_by_week = train_detail.groupby('Week')['Weekly_Sales'].agg(['mean', 'median']).reset_index()
+sales_by_week = sales_by_week.sort_values('Week')
 
-print("Mean and Median of Weekly_Sales by Date:")
-print(sales_by_date.head(10))
+print("Mean and Median of Weekly_Sales by Week:")
+print(sales_by_week.head(10))
 
 # Create correlation plot between mean and median by Date
 fig, (ax1) = plt.subplots(1, figsize=(15, 5))
