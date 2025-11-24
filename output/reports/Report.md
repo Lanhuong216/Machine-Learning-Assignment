@@ -37,7 +37,7 @@ Xây dựng mô hình Machine Learning để dự báo doanh số hàng tuần c
 
 - **Dữ liệu:** Doanh số hàng tuần từ 45 cửa hàng Walmart
 - **Thời gian:** Dữ liệu lịch sử từ năm 2010-2012
-- **Phương pháp:** Machine Learning truyền thống (Random Forest, XGBoost, Linear Regression)
+- **Phương pháp:** Machine Learning truyền thống (Random Forest, XGBoost)
 - **Metric chính:** WMAE (Weighted Mean Absolute Error)
 
 ### 1.3. Ràng buộc
@@ -130,13 +130,7 @@ Dự án sử dụng 4 dataset chính:
 
 ### 3.1. Thuật toán được sử dụng
 
-#### 3.1.1. Linear Regression (Baseline)
-
-- **Mục đích:** Mô hình cơ sở để so sánh
-- **Ưu điểm:** Đơn giản, nhanh, dễ hiểu
-- **Nhược điểm:** Không nắm bắt được mối quan hệ phi tuyến
-
-#### 3.1.2. Random Forest Regressor
+#### 3.1.1. Random Forest Regressor
 
 - **Loại:** Ensemble (Bagging)
 - **Thư viện:** scikit-learn
@@ -149,7 +143,7 @@ Dự án sử dụng 4 dataset chính:
   - Baseline: n_estimators=100, max_depth=None
   - Tuned: n_estimators=200, max_depth=20, max_samples=0.8, max_features='log2'
 
-#### 3.1.3. XGBoost (Extreme Gradient Boosting)
+#### 3.1.2. XGBoost (Extreme Gradient Boosting)
 
 - **Loại:** Ensemble (Boosting)
 - **Thư viện:** xgboost
@@ -376,13 +370,12 @@ Best parameters được tìm thấy bằng RandomizedSearchCV với TimeSeriesS
 
 #### Bảng so sánh đầy đủ:
 
-| Model                           | MAE       | RMSE      | R²      | WMAE         | Ranking |
-| ------------------------------- | --------- | --------- | ------- | ------------ | ------- |
-| 🥇 **Random Forest (Baseline)** | 4,520.18  | 9,470.95  | 0.7523  | **4,602.51** | 1       |
-| 🥈 **XGBoost (Tuned)**          | 4,947.40  | 9,313.96  | 0.7605  | 5,029.26     | 2       |
-| 🥉 **XGBoost (Baseline)**       | 5,265.34  | 9,356.13  | 0.7583  | 5,420.75     | 3       |
-| 4. Random Forest (Tuned)        | 5,615.79  | 9,549.41  | 0.7482  | 5,749.49     | 4       |
-| 5. Linear Regression            | 11,764.09 | 19,066.12 | -0.0037 | 11,891.29    | 5       |
+| Model                          | Mean WMAE    | Std WMAE | Mean R² | Ranking |
+| ------------------------------ | ------------ | -------- | ------- | ------- |
+| 🥇 **XGBoost (Tuned)**         | **1,246.91** | ±8.06    | 0.9878  | 1       |
+| 🥈 **Random Forest (Untuned)** | 1,535.21     | ±13.89   | 0.9787  | 2       |
+| 🥉 **Random Forest (Tuned)**   | 1,552.38     | ±14.84   | 0.9762  | 3       |
+| 4. XGBoost (Untuned)           | 4,065.68     | ±22.96   | 0.9054  | 4       |
 
 ---
 
